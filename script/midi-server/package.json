@@ -1,0 +1,16 @@
+{
+  "name": "midi-websocket-server",
+  "version": "1.0.0",
+  "description": "NodeJS WebSocket server to receive MIDI signals from Flutter app and forward to Virtual MIDI port",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["midi", "websocket", "fl-studio", "DAW"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.16.0",
+    "easymidi": "^3.0.1"
+  }
+}

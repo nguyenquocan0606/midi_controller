@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "WebFetch(domain:www.tobias-erichsen.de)",
+      "Bash(curl:*)",
+      "Bash(unzip:*)",
+      "Bash(\"/tmp/loopMIDI/loopMIDISetup.exe\":*)"
+    ]
+  }
+}
