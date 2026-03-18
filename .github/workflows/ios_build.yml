@@ -1,0 +1,45 @@
+name: Build iOS (Unsigned)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Cho phép trigger bằng tay từ giao diện Github
+
+jobs:
+  build-ios:
+    # BẮT BUỘC dùng macos để build iOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          # Tự động lấy bản Flutter stable mới nhất
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS Application
+        # Tham số --no-codesign giúp build mà không cần Apple Developer Account
+        run: flutter build ios --release --no-codesign
+
+      # Chuyển đổi file .app thành .ipa
+      - name: Convert .app to .ipa
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r app.ipa Payload
+          rm -rf Payload
+
+      # Upload Artifact để bạn có thể tải file ipa về máy
+      - name: Upload iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-ipa
+          path: build/ios/iphoneos/app.ipa
