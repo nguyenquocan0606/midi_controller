@@ -19,17 +19,11 @@ jobs:
         with:
           channel: 'stable'
 
-      # Cài đặt Ruby gems (cần cho CocoaPods)
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.0'
-
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      # Quan trọng: Chạy pod install để cài CocoaPods dependencies
-      # (flutter_midi_command cần CoreMIDI pod)
+      # Quan trọng: pod install cài CocoaPods dependencies (flutter_midi_command cần CoreMIDI pod)
+      # macOS runner đã có sẵn Ruby + CocoaPods
       - name: Install CocoaPods dependencies
         run: |
           cd ios
@@ -40,7 +34,7 @@ jobs:
         # --no-codesign: Build không cần Apple Developer Account
         run: flutter build ios --release --no-codesign
 
-      # Đóng gói .app thành .ipa (unsigned, sideload qua Xcode/Sideloadly)
+      # Đóng gói .app thành .ipa (unsigned, sideload qua Sideloadly)
       - name: Package .ipa
         run: |
           cd build/ios/iphoneos
