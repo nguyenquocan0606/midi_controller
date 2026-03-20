@@ -38,7 +38,7 @@ class AppConstants {
   static const int messageThrottleMs = 10;
 
   /// Số faders mặc định trên mixer
-  static const int defaultFaderCount = 8;
+  static const int defaultFaderCount = 10;
 
   /// Số knobs mặc định
   static const int defaultKnobCount = 8;

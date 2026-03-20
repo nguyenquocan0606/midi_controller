@@ -6,11 +6,17 @@
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": ["midi", "websocket", "fl-studio", "DAW"],
+  "keywords": [
+    "midi",
+    "websocket",
+    "fl-studio",
+    "DAW"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "ws": "^8.16.0",
-    "easymidi": "^3.0.1"
+    "easymidi": "^3.0.1",
+    "osc": "^2.4.5",
+    "ws": "^8.16.0"
   }
 }

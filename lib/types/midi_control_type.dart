@@ -68,11 +68,19 @@ class MidiMessage {
   /// Parse từ JSON string nhận từ server (feedback)
   factory MidiMessage.fromJson(String jsonStr) {
     final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+    final typeStr = map['type'] as String;
+    
+    // Tìm enum tương ứng, nếu không thấy thì mặc định là controlChange để tránh throw
+    final type = MidiMessageType.values.firstWhere(
+      (e) => e.name == typeStr,
+      orElse: () => MidiMessageType.controlChange,
+    );
+
     return MidiMessage(
-      type: MidiMessageType.values.byName(map['type'] as String),
-      channel: map['channel'] as int,
-      control: map['control'] as int,
-      value: map['value'] as int,
+      type: type,
+      channel: map['channel'] as int? ?? 0,
+      control: map['control'] as int? ?? 0,
+      value: map['value'] as int? ?? 0,
     );
   }
 

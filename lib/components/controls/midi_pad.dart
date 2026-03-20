@@ -98,45 +98,72 @@ class _MidiPadState extends State<MidiPad>
         animation: _fadeAnimation,
         builder: (context, child) {
           final effectiveOpacity = _isPressed ? 1.0 : _fadeAnimation.value;
+          final velocityValue = (_isPressed ? 127 : (_velocity * 127)).round();
 
-          return Container(
-            width: widget.size,
-            height: widget.size,
-            decoration: BoxDecoration(
-              color: Color.lerp(
-                AppTheme.padIdle,
-                color,
-                effectiveOpacity * _velocity * 0.6,
+          return Stack(
+            children: [
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  color: Color.lerp(
+                    AppTheme.padIdle,
+                    color,
+                    effectiveOpacity * _velocity * 0.6,
+                  ),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(
+                    color: Color.lerp(
+                      AppTheme.surfaceBorder,
+                      color,
+                      effectiveOpacity * _velocity,
+                    )!,
+                    width: 1.5,
+                  ),
+                  boxShadow: _isPressed
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.4 * _velocity),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    widget.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 10,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-              border: Border.all(
-                color: Color.lerp(
-                  AppTheme.surfaceBorder,
-                  color,
-                  effectiveOpacity * _velocity,
-                )!,
-                width: 1.5,
-              ),
-              boxShadow: _isPressed
-                  ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.4 * _velocity),
-                        blurRadius: 16,
-                        spreadRadius: 2,
+              // Velocity Layer (Opacity 40%) - Hiển thị đè lên khi nhấn
+              if (_isPressed || _fadeAnimation.value > 0)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    child: Container(
+                      color: color.withValues(alpha: 0.4 * effectiveOpacity),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'VEL: $velocityValue',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: effectiveOpacity),
+                          fontWeight: FontWeight.bold,
+                          shadows: const [
+                            Shadow(color: Colors.black, blurRadius: 4),
+                          ],
+                        ),
                       ),
-                    ]
-                  : null,
-            ),
-            child: Center(
-              child: Text(
-                widget.label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                      fontSize: 10,
                     ),
-                textAlign: TextAlign.center,
-              ),
-            ),
+                  ),
+                ),
+            ],
           );
         },
       ),

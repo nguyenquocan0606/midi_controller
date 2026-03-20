@@ -28,11 +28,16 @@ class MidiFader extends StatefulWidget {
 class _MidiFaderState extends State<MidiFader> {
   int? _activePointer; // Track pointer riêng cho multi-touch
 
-  void _handlePointerEvent(Offset localPosition) {
-    final trackHeight = widget.height - 60; // Trừ padding top/bottom
-    final clampedY = localPosition.dy.clamp(30.0, trackHeight + 30.0);
-    // Đảo ngược: kéo lên = giá trị cao
-    final normalized = 1.0 - ((clampedY - 30.0) / trackHeight);
+  void _handlePointerEvent(Offset localPosition, double trackHeight) {
+    final thumbHeight = 32.0; // Kích thước thumb
+    final padding = thumbHeight / 2;
+    final effectiveHeight = trackHeight - 2 * padding;
+    
+    // Giới hạn y trong vùng track hợp lệ
+    final clampedY = localPosition.dy.clamp(padding, trackHeight - padding);
+    
+    // Tính toán giá trị 0.0 -> 1.0 (kéo lên = giá trị cao)
+    final normalized = 1.0 - ((clampedY - padding) / effectiveHeight);
     widget.onChanged(normalized.clamp(0.0, 1.0));
   }
 
@@ -41,57 +46,61 @@ class _MidiFaderState extends State<MidiFader> {
     final color = widget.activeColor ?? AppTheme.faderThumb;
     final midiValue = (widget.value * 127).round();
 
-    return Listener(
-      // Dùng Listener thay vì GestureDetector để hỗ trợ multi-touch
-      onPointerDown: (event) {
-        _activePointer = event.pointer;
-        _handlePointerEvent(event.localPosition);
-      },
-      onPointerMove: (event) {
-        if (event.pointer == _activePointer) {
-          _handlePointerEvent(event.localPosition);
-        }
-      },
-      onPointerUp: (event) {
-        if (event.pointer == _activePointer) {
-          _activePointer = null;
-        }
-      },
-      child: SizedBox(
-        width: widget.width,
-        height: widget.height,
-        child: Column(
-          children: [
-            // Giá trị MIDI
-            Text(
-              '$midiValue',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            // Fader track
-            Expanded(
-              child: CustomPaint(
-                size: Size(widget.width, double.infinity),
-                painter: _FaderPainter(
-                  value: widget.value,
-                  activeColor: color,
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: Column(
+        children: [
+          // Giá trị MIDI
+          Text(
+            '$midiValue',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
-              ),
+          ),
+          const SizedBox(height: 4),
+          // Fader track
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final trackHeight = constraints.maxHeight;
+                return Listener(
+                  onPointerDown: (event) {
+                    _activePointer = event.pointer;
+                    _handlePointerEvent(event.localPosition, trackHeight);
+                  },
+                  onPointerMove: (event) {
+                    if (event.pointer == _activePointer) {
+                      _handlePointerEvent(event.localPosition, trackHeight);
+                    }
+                  },
+                  onPointerUp: (event) {
+                    if (event.pointer == _activePointer) {
+                      _activePointer = null;
+                    }
+                  },
+                  child: CustomPaint(
+                    size: Size(widget.width, trackHeight),
+                    painter: _FaderPainter(
+                      value: widget.value,
+                      activeColor: color,
+                    ),
+                  ),
+                );
+              }
             ),
-            const SizedBox(height: 6),
-            // Label
-            Text(
-              widget.label,
-              style: Theme.of(context).textTheme.labelSmall,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          // Label
+          Text(
+            widget.label,
+            style: Theme.of(context).textTheme.labelSmall,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -111,16 +120,22 @@ class _FaderPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final centerX = size.width / 2;
     final trackWidth = 6.0;
-    final thumbHeight = 20.0;
-    final thumbWidth = size.width * 0.65;
+    final thumbHeight = 32.0; // Thumb to hơn
+    final thumbWidth = size.width * 0.75;
     final meterWidth = 4.0;
+    
+    final padding = thumbHeight / 2;
+    final effectiveHeight = size.height - 2 * padding;
+
+    // Vị trí thumb
+    final thumbY = padding + effectiveHeight * (1.0 - value);
 
     // Track background
     final trackRect = RRect.fromRectAndRadius(
       Rect.fromCenter(
         center: Offset(centerX, size.height / 2),
         width: trackWidth,
-        height: size.height,
+        height: size.height - padding,
       ),
       const Radius.circular(3),
     );
@@ -129,14 +144,10 @@ class _FaderPainter extends CustomPainter {
       Paint()..color = AppTheme.faderTrack,
     );
 
-    // Vị trí thumb (đảo ngược: value 1.0 = top)
-    final thumbY = size.height * (1.0 - value);
-
     // LED Meter (bên trái track)
-    final meterX = centerX - trackWidth - 4;
-    final meterHeight = size.height - thumbY;
+    final meterX = centerX - trackWidth - 6;
+    final meterHeight = size.height - padding - thumbY;
     if (meterHeight > 0) {
-      // Gradient từ xanh → vàng → đỏ
       final meterPaint = Paint()
         ..shader = LinearGradient(
           begin: Alignment.bottomCenter,
@@ -163,13 +174,13 @@ class _FaderPainter extends CustomPainter {
     // Tick marks (vạch chia)
     final tickPaint = Paint()
       ..color = AppTheme.textDim.withValues(alpha: 0.3)
-      ..strokeWidth = 1;
+      ..strokeWidth = 1.5;
     for (int i = 0; i <= 10; i++) {
-      final y = size.height * i / 10;
-      final tickLength = (i == 0 || i == 5 || i == 10) ? 8.0 : 4.0;
+      final y = padding + effectiveHeight * i / 10;
+      final tickLength = (i == 0 || i == 5 || i == 10) ? 10.0 : 5.0;
       canvas.drawLine(
-        Offset(centerX + trackWidth + 2, y),
-        Offset(centerX + trackWidth + 2 + tickLength, y),
+        Offset(centerX + trackWidth + 4, y),
+        Offset(centerX + trackWidth + 4 + tickLength, y),
         tickPaint,
       );
     }
@@ -181,15 +192,15 @@ class _FaderPainter extends CustomPainter {
         width: thumbWidth,
         height: thumbHeight,
       ),
-      const Radius.circular(4),
+      const Radius.circular(6),
     );
 
     // Thumb shadow
     canvas.drawRRect(
-      thumbRect.shift(const Offset(0, 2)),
+      thumbRect.shift(const Offset(0, 4)),
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.4)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        ..color = Colors.black.withValues(alpha: 0.6)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
 
     // Thumb body
@@ -200,19 +211,34 @@ class _FaderPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.surfaceLight.withValues(alpha: 0.9),
+            AppTheme.surfaceLight,
             AppTheme.surface,
           ],
         ).createShader(thumbRect.outerRect),
     );
 
-    // Thumb center line (nét giữa nắm kéo)
+    // Gờ chống trượt trên thumb (3 nét)
+    final gripPaint = Paint()
+      ..color = AppTheme.surfaceBorder.withValues(alpha: 0.5)
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+    
+    for (int i = -1; i <= 1; i++) {
+      final lineY = thumbY + i * 5;
+      canvas.drawLine(
+        Offset(centerX - thumbWidth * 0.3, lineY),
+        Offset(centerX + thumbWidth * 0.3, lineY),
+        gripPaint,
+      );
+    }
+
+    // Thumb indicator line (nét màu rực rỡ ở giữa)
     canvas.drawLine(
-      Offset(centerX - thumbWidth * 0.25, thumbY),
-      Offset(centerX + thumbWidth * 0.25, thumbY),
+      Offset(centerX - thumbWidth * 0.4, thumbY),
+      Offset(centerX + thumbWidth * 0.4, thumbY),
       Paint()
         ..color = activeColor
-        ..strokeWidth = 2
+        ..strokeWidth = 2.5
         ..strokeCap = StrokeCap.round,
     );
   }

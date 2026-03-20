@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_theme.dart';
 import '../constants/app_constants.dart';
 import '../stores/connection_provider.dart';
 import '../types/connection_state.dart';
+import '../types/midi_control_type.dart';
 import '../components/controls/midi_fader.dart';
 import '../components/controls/midi_pad.dart';
 
@@ -23,13 +25,42 @@ class _MixerPageState extends State<MixerPage> {
 
   // Labels cho faders
   final List<String> _faderLabels = [
-    'CH 1', 'CH 2', 'CH 3', 'CH 4',
-    'CH 5', 'CH 6', 'CH 7', 'MASTER',
+    'CH 1', 'CH 2', 'CH 3', 'CH 4', 'CH 5',
+    'CH 6', 'CH 7', 'CH 8', 'CH 9', 'MASTER',
   ];
 
   // Labels cho 15 pads
   final List<String> _padLabels = List.generate(
       AppConstants.defaultPadCount, (index) => 'PAD ${index + 1}');
+
+  // Stream subscription cho feedback
+  StreamSubscription? _feedbackSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Lắng nghe feedback từ Resolume gởi về
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final connection = context.read<ConnectionProvider>();
+      // Lắng nghe WebSocket service (WiFi / USB Tethering)
+      _feedbackSub = connection.wsService.messageStream.listen((msg) {
+        if (msg.type == MidiMessageType.controlChange) {
+          // Feedback cho Faders (CC 1-10)
+          if (msg.control >= 1 && msg.control <= AppConstants.defaultFaderCount) {
+            setState(() {
+              _faderValues[msg.control - 1] = msg.value / 127.0;
+            });
+          }
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _feedbackSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

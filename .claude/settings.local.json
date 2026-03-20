@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:pub.dev)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter ios:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(find 'D:/cac du an dang lam/flutter/midi/midi_controller/.pub-cache' -name flutter_midi_command* -type d)"
+    ]
+  }
+}
