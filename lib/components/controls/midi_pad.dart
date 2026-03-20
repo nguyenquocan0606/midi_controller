@@ -2,21 +2,28 @@ import 'package:flutter/material.dart';
 import '../../constants/app_theme.dart';
 
 /// MIDI Pad - Velocity-sensitive drum pad
-/// Ấn nhanh = velocity cao, ấn chậm = velocity thấp
+/// Hỗ trợ image, tên, custom color, Layer mutual exclusion
 class MidiPad extends StatefulWidget {
   final String label;
-  final ValueChanged<int> onNoteOn; // velocity 0-127
+  /// Callback khi pad được ấn (trả về velocity 0-127)
+  final void Function(int velocity) onNoteOn;
   final VoidCallback onNoteOff;
-  final Color? activeColor;
+  final Color? customColor;
   final double? size;
+  /// URL ảnh từ server
+  final String? imageUrl;
+  /// Pad này có đang active trong Layer không (dùng cho Layer mutual exclusion)
+  final bool isLayerActive;
 
   const MidiPad({
     super.key,
     required this.label,
     required this.onNoteOn,
     required this.onNoteOff,
-    this.activeColor,
+    this.customColor,
     this.size,
+    this.imageUrl,
+    this.isLayerActive = false,
   });
 
   @override
@@ -26,148 +33,161 @@ class MidiPad extends StatefulWidget {
 class _MidiPadState extends State<MidiPad>
     with SingleTickerProviderStateMixin {
   bool _isPressed = false;
-  double _velocity = 0.0;
   DateTime? _touchStartTime;
 
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
+  late AnimationController _animCtrl;
+  late Animation<double> _fadeAnim;
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
+    _animCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
+    _fadeAnim = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut),
     );
+  }
+
+  @override
+  void didUpdateWidget(MidiPad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Khi pad này bị mất active status (pad KHÁC trong cùng Layer được ấn)
+    // → isLayerActive chuyển true → false → trigger fade-out
+    if (!widget.isLayerActive && oldWidget.isLayerActive) {
+      _animCtrl.forward(from: 0.0);
+    }
+    // Khi pad này nhận lại active status → reset animation
+    if (widget.isLayerActive && !oldWidget.isLayerActive) {
+      _animCtrl.reset();
+    }
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    _animCtrl.dispose();
     super.dispose();
   }
 
-  void _handlePointerDown(PointerDownEvent event) {
+  void _onTapDown() {
     _touchStartTime = DateTime.now();
-    setState(() {
-      _isPressed = true;
-      _velocity = 1.0; // Mặc định velocity max
-    });
-    _fadeController.reset();
+    setState(() => _isPressed = true);
+    _animCtrl.reset();
+    widget.onNoteOn(127);
   }
 
-  void _handlePointerUp(PointerUpEvent event) {
-    // Tính velocity dựa trên thời gian nhấn:
-    // Nhấn cực nhanh (<50ms) = velocity 127
-    // Nhấn chậm (>300ms) = velocity thấp (~40)
+  void _onTapUp() {
     if (_touchStartTime != null) {
-      final duration =
-          DateTime.now().difference(_touchStartTime!).inMilliseconds;
-      final velocityNormalized =
-          (1.0 - (duration.clamp(0, 300) / 300.0)).clamp(0.3, 1.0);
-      final velocity = (velocityNormalized * 127).round();
-
-      setState(() {
-        _velocity = velocityNormalized;
-      });
-
-      widget.onNoteOn(velocity);
+      _touchStartTime = null;
+      setState(() => _isPressed = false);
+      _animCtrl.forward().then((_) => widget.onNoteOff());
     }
-
-    setState(() {
-      _isPressed = false;
-    });
-
-    // Fade out animation
-    _fadeController.forward().then((_) {
-      widget.onNoteOff();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.activeColor ?? AppTheme.padActive;
+    // Để tiện đổi tên biến cho rõ ràng
+    final effectiveActive =
+        _isPressed || widget.isLayerActive;
+    final baseColor = widget.customColor ?? AppTheme.padActive;
 
     return Listener(
-      onPointerDown: _handlePointerDown,
-      onPointerUp: _handlePointerUp,
+      onPointerDown: (_) => _onTapDown(),
+      onPointerUp: (_) => _onTapUp(),
       child: AnimatedBuilder(
-        animation: _fadeAnimation,
-        builder: (context, child) {
-          final effectiveOpacity = _isPressed ? 1.0 : _fadeAnimation.value;
-          final velocityValue = (_isPressed ? 127 : (_velocity * 127)).round();
-
-          return Stack(
-            children: [
-              Container(
-                width: widget.size,
-                height: widget.size,
-                decoration: BoxDecoration(
-                  color: Color.lerp(
-                    AppTheme.padIdle,
-                    color,
-                    effectiveOpacity * _velocity * 0.6,
-                  ),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  border: Border.all(
-                    color: Color.lerp(
-                      AppTheme.surfaceBorder,
-                      color,
-                      effectiveOpacity * _velocity,
-                    )!,
-                    width: 1.5,
-                  ),
-                  boxShadow: _isPressed
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.4 * _velocity),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    widget.label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                          fontSize: 10,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+        animation: _fadeAnim,
+        builder: (context, _) {
+          return Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              color: _buildBgColor(effectiveActive, baseColor),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              border: Border.all(
+                color: effectiveActive
+                    ? baseColor
+                    : AppTheme.surfaceBorder,
+                width: effectiveActive ? 2.5 : 1.5,
               ),
-              // Velocity Layer (Opacity 40%) - Hiển thị đè lên khi nhấn
-              if (_isPressed || _fadeAnimation.value > 0)
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    child: Container(
-                      color: color.withValues(alpha: 0.4 * effectiveOpacity),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'VEL: $velocityValue',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: effectiveOpacity),
-                          fontWeight: FontWeight.bold,
-                          shadows: const [
-                            Shadow(color: Colors.black, blurRadius: 4),
-                          ],
-                        ),
+              boxShadow: effectiveActive
+                  ? [
+                      BoxShadow(
+                        color: baseColor.withValues(alpha: 0.4),
+                        blurRadius: 16,
+                        spreadRadius: 2,
                       ),
-                    ),
-                  ),
-                ),
-            ],
+                    ]
+                  : null,
+            ),
+            child: widget.imageUrl != null && widget.imageUrl!.isNotEmpty
+                ? _buildImagePad(baseColor)
+                : _buildTextPad(),
           );
         },
       ),
     );
   }
-}
 
+  Color _buildBgColor(bool active, Color color) {
+    if (active) {
+      return color.withValues(alpha: 0.3);
+    }
+    return AppTheme.padIdle;
+  }
+
+  Widget _buildTextPad() {
+    return Center(
+      child: Text(
+        widget.label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppTheme.textSecondary,
+              fontSize: 10,
+            ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildImagePad(Color baseColor) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Image
+        Positioned.fill(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Image.network(
+              widget.imageUrl!,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.broken_image,
+                color: AppTheme.textDim,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        // Label
+        Positioned(
+          bottom: 4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: 8,
+                color: baseColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

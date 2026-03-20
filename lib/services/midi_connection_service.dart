@@ -1,12 +1,38 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../types/midi_control_type.dart';
 import '../types/connection_state.dart';
+import '../types/app_config.dart';
 import '../constants/app_constants.dart';
 
+/// Loại message từ server
+enum ServerMessageType {
+  connected,
+  config,
+  midiFeedback,
+  osc,
+  stateSync,
+}
+
+/// Server message wrapper
+class ServerMessage {
+  final ServerMessageType type;
+  final MidiMessage? midiMessage;
+  final AppConfig? config;
+  final String? rawData;
+
+  ServerMessage({
+    required this.type,
+    this.midiMessage,
+    this.config,
+    this.rawData,
+  });
+}
+
 /// Service quản lý kết nối WebSocket đến PC server
-/// Hỗ trợ auto-reconnect, gửi/nhận MIDI messages
+/// Hỗ trợ auto-reconnect, gửi/nhận MIDI messages và config sync
 class MidiConnectionService {
   WebSocketChannel? _channel;
   MidiConnectionStatus _status = MidiConnectionStatus.disconnected;
@@ -18,15 +44,19 @@ class MidiConnectionService {
   final _statusController =
       StreamController<MidiConnectionStatus>.broadcast();
   final _messageController = StreamController<MidiMessage>.broadcast();
+  final _configController = StreamController<AppConfig>.broadcast();
 
-  // Throttle: chặn gửi quá nhanh
+  // Throttle
   DateTime _lastSendTime = DateTime.now();
 
   /// Stream lắng nghe thay đổi trạng thái kết nối
   Stream<MidiConnectionStatus> get statusStream => _statusController.stream;
 
-  /// Stream lắng nghe messages từ server (feedback)
+  /// Stream lắng nghe messages từ server (MIDI feedback)
   Stream<MidiMessage> get messageStream => _messageController.stream;
+
+  /// Stream nhận config từ server
+  Stream<AppConfig> get configStream => _configController.stream;
 
   /// Trạng thái kết nối hiện tại
   MidiConnectionStatus get status => _status;
@@ -51,21 +81,14 @@ class MidiConnectionService {
       final wsUrl = Uri.parse(_config.wsUrl);
       _channel = WebSocketChannel.connect(wsUrl);
 
-      // Chờ kết nối thành công
       await _channel!.ready;
 
       _updateStatus(MidiConnectionStatus.connected);
       _reconnectAttempts = 0;
 
-      // Lắng nghe messages từ server
       _channel!.stream.listen(
         (data) {
-          try {
-            final message = MidiMessage.fromJson(data as String);
-            _messageController.add(message);
-          } catch (e) {
-            debugPrint('⚠️ Parse message error: $e');
-          }
+          _handleIncomingData(data.toString());
         },
         onError: (error) {
           debugPrint('❌ WebSocket error: $error');
@@ -83,10 +106,52 @@ class MidiConnectionService {
     }
   }
 
+  /// Xử lý data nhận từ server
+  void _handleIncomingData(String raw) {
+    try {
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final type = json['type'] as String?;
+
+      if (type == 'connected') {
+        if (json.containsKey('config')) {
+          final cfg = AppConfig.fromJson(json['config'] as Map<String, dynamic>);
+          _configController.add(cfg);
+          debugPrint('[CFG] Connected - received config');
+        }
+        return;
+      }
+
+      if (type == 'config') {
+        if (json.containsKey('config')) {
+          final cfg = AppConfig.fromJson(json['config'] as Map<String, dynamic>);
+          _configController.add(cfg);
+          debugPrint('[CFG] Config updated');
+        }
+        return;
+      }
+
+      if (type == 'osc') {
+        // OSC message - forward as raw for now
+        debugPrint('[OSC] ${json['address']}');
+        return;
+      }
+
+      // Default: MIDI feedback message
+      try {
+        final msg = MidiMessage.fromJson(raw);
+        _messageController.add(msg);
+      } catch (e) {
+        debugPrint('⚠️ Parse MIDI error: $e');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Parse error: $e');
+    }
+  }
+
   /// Ngắt kết nối
   Future<void> disconnect() async {
     _reconnectTimer?.cancel();
-    _reconnectAttempts = AppConstants.maxReconnectAttempts; // Ngăn auto-reconnect
+    _reconnectAttempts = AppConstants.maxReconnectAttempts;
     await _channel?.sink.close();
     _channel = null;
     _updateStatus(MidiConnectionStatus.disconnected);
@@ -96,7 +161,6 @@ class MidiConnectionService {
   void sendMessage(MidiMessage message) {
     if (_status != MidiConnectionStatus.connected || _channel == null) return;
 
-    // Throttle: chặn gửi quá nhanh
     final now = DateTime.now();
     if (now.difference(_lastSendTime).inMilliseconds <
         AppConstants.messageThrottleMs) {
@@ -111,7 +175,7 @@ class MidiConnectionService {
     }
   }
 
-  /// Gửi nhanh Control Change message
+  /// Gửi Control Change
   void sendCC(int channel, int cc, int value) {
     sendMessage(MidiMessage(
       type: MidiMessageType.controlChange,
@@ -141,14 +205,26 @@ class MidiConnectionService {
     ));
   }
 
-  /// Xử lý khi mất kết nối
+  /// Gửi OSC message đến server
+  void sendOsc(String address, List<Object> args) {
+    if (_status != MidiConnectionStatus.connected || _channel == null) return;
+    try {
+      _channel!.sink.add(jsonEncode({
+        'type': 'oscSend',
+        'address': address,
+        'args': args,
+      }));
+    } catch (e) {
+      debugPrint('❌ OSC send failed: $e');
+    }
+  }
+
   void _handleDisconnect() {
     _channel = null;
     _updateStatus(MidiConnectionStatus.disconnected);
     _scheduleReconnect();
   }
 
-  /// Lên lịch tự động kết nối lại
   void _scheduleReconnect() {
     if (_reconnectAttempts >= AppConstants.maxReconnectAttempts) {
       debugPrint('❌ Max reconnect attempts reached');
@@ -168,17 +244,16 @@ class MidiConnectionService {
     );
   }
 
-  /// Cập nhật và broadcast trạng thái
   void _updateStatus(MidiConnectionStatus newStatus) {
     _status = newStatus;
     _statusController.add(newStatus);
   }
 
-  /// Giải phóng tài nguyên
   void dispose() {
     _reconnectTimer?.cancel();
     _channel?.sink.close();
     _statusController.close();
     _messageController.close();
+    _configController.close();
   }
 }

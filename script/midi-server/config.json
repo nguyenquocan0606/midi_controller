@@ -1,0 +1,276 @@
+{
+  "groups": [
+    {
+      "id": 0,
+      "name": "Group 1",
+      "channels": [
+        {
+          "id": 0,
+          "name": "CH 1",
+          "color": null
+        },
+        {
+          "id": 1,
+          "name": "CH 2",
+          "color": null
+        },
+        {
+          "id": 2,
+          "name": "CH 3",
+          "color": null
+        }
+      ],
+      "isActive": false
+    },
+    {
+      "id": 1,
+      "name": "Group 2",
+      "channels": [
+        {
+          "id": 0,
+          "name": "CH 4",
+          "color": null
+        },
+        {
+          "id": 1,
+          "name": "CH 5",
+          "color": null
+        },
+        {
+          "id": 2,
+          "name": "CH 6",
+          "color": null
+        }
+      ],
+      "isActive": false
+    },
+    {
+      "id": 2,
+      "name": "Group 3",
+      "channels": [
+        {
+          "id": 0,
+          "name": "CH 7",
+          "color": null
+        },
+        {
+          "id": 1,
+          "name": "CH 8",
+          "color": null
+        },
+        {
+          "id": 2,
+          "name": "CH 9",
+          "color": null
+        }
+      ],
+      "isActive": false
+    },
+    {
+      "id": 1774022149927,
+      "name": "gr4",
+      "channels": [
+        {
+          "id": 0,
+          "name": "CH 10",
+          "color": null
+        },
+        {
+          "id": 1,
+          "name": "CH 11",
+          "color": null
+        },
+        {
+          "id": 2,
+          "name": "CH 12",
+          "color": null
+        }
+      ],
+      "isActive": true
+    }
+  ],
+  "activeGroupId": 1774022149927,
+  "padLayout": "grid5x3",
+  "pads": [
+    {
+      "id": 0,
+      "name": "PAD 1",
+      "imageUrl": "http://169.254.83.107:8080/pads/pad_0_1774023353655.png",
+      "color": "#00d4ff",
+      "type": "trigger"
+    },
+    {
+      "id": 1,
+      "name": "PAD 2",
+      "imageUrl": "http://169.254.83.107:8080/pads/pad_1_1774023361815.png",
+      "color": "#00d4ff",
+      "type": "trigger"
+    },
+    {
+      "id": 2,
+      "name": "PAD 3",
+      "imageUrl": "http://169.254.83.107:8080/pads/pad_2_1774023373432.png",
+      "color": "#00d4ff",
+      "type": "trigger"
+    },
+    {
+      "id": 3,
+      "name": "PAD 4",
+      "imageUrl": "http://169.254.83.107:8080/pads/pad_3_1774023416869.png",
+      "color": "#00d4ff",
+      "type": "trigger"
+    },
+    {
+      "id": 4,
+      "name": "PAD 5",
+      "imageUrl": null,
+      "color": null,
+      "type": "trigger"
+    },
+    {
+      "id": 5,
+      "name": "PAD 6",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 1
+    },
+    {
+      "id": 6,
+      "name": "PAD 7",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 1
+    },
+    {
+      "id": 7,
+      "name": "PAD 8",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 1
+    },
+    {
+      "id": 8,
+      "name": "PAD 9",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 1
+    },
+    {
+      "id": 9,
+      "name": "PAD 10",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 1
+    },
+    {
+      "id": 10,
+      "name": "PAD 11",
+      "imageUrl": null,
+      "color": null,
+      "type": "trigger"
+    },
+    {
+      "id": 11,
+      "name": "PAD 12",
+      "imageUrl": null,
+      "color": null,
+      "type": "trigger"
+    },
+    {
+      "id": 12,
+      "name": "PAD 13",
+      "imageUrl": null,
+      "color": null,
+      "type": "trigger"
+    },
+    {
+      "id": 13,
+      "name": "PAD 14",
+      "imageUrl": null,
+      "color": null,
+      "type": "trigger"
+    },
+    {
+      "id": 14,
+      "name": "PAD 15",
+      "imageUrl": null,
+      "color": null,
+      "type": "trigger"
+    }
+  ],
+  "layers": [
+    {
+      "id": 0,
+      "name": "Layer 1",
+      "channels": [
+        {
+          "id": 0,
+          "name": "CH 1",
+          "color": null
+        },
+        {
+          "id": 1,
+          "name": "CH 2",
+          "color": null
+        },
+        {
+          "id": 2,
+          "name": "CH 3",
+          "color": null
+        }
+      ],
+      "isActive": true
+    },
+    {
+      "id": 1,
+      "name": "Layer 2",
+      "channels": [
+        {
+          "id": 0,
+          "name": "CH 4",
+          "color": null
+        },
+        {
+          "id": 1,
+          "name": "CH 5",
+          "color": null
+        },
+        {
+          "id": 2,
+          "name": "CH 6",
+          "color": null
+        }
+      ],
+      "isActive": false
+    },
+    {
+      "id": 2,
+      "name": "Layer 3",
+      "channels": [
+        {
+          "id": 0,
+          "name": "CH 7",
+          "color": null
+        },
+        {
+          "id": 1,
+          "name": "CH 8",
+          "color": null
+        },
+        {
+          "id": 2,
+          "name": "CH 9",
+          "color": null
+        }
+      ],
+      "isActive": false
+    }
+  ],
+  "activeLayerId": 0,
+  "serverUrl": "http://169.254.83.107:8080"
+}
