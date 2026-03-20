@@ -9,11 +9,10 @@ import '../types/connection_state.dart';
 ///
 /// flutter_midi_command dùng CoreMIDI trên iOS — tự động nhận diện
 /// tất cả thiết bị MIDI vật lý (USB, Bluetooth) qua CoreMIDI.
-/// Không cần cấu hình riêng cho USB.
 ///
-/// Hỗ trợ 2 chế độ:
-/// 1. USB Tethering: iPad kết nối WebSocket qua mạng USB network
-/// 2. Bluetooth / USB MIDI: iPad gửi MIDI trực tiếp qua thiết bị vật lý
+/// Vấn đề đã giải quyết:
+/// - USB MIDI devices: liệt kê ngay từ đầu (CoreMIDI tự detect)
+/// - BLE MIDI devices: cần scan để tìm thêm
 class UsbMidiService {
   // ─── Singleton MidiCommand ────────────────────────────
   final MidiCommand _midi = MidiCommand();
@@ -28,6 +27,7 @@ class UsbMidiService {
       StreamController<MidiConnectionStatus>.broadcast();
   final _messageController = StreamController<MidiMessage>.broadcast();
   final _devicesController = StreamController<List<MidiDevice>>.broadcast();
+  final _scanController = StreamController<bool>.broadcast();
 
   // Devices list
   List<MidiDevice> _devices = [];
@@ -44,6 +44,7 @@ class UsbMidiService {
   Stream<MidiConnectionStatus> get statusStream => _statusController.stream;
   Stream<MidiMessage> get messageStream => _messageController.stream;
   Stream<List<MidiDevice>> get devicesStream => _devicesController.stream;
+  Stream<bool> get isScanningStream => _scanController.stream;
 
   bool get isConnected => _isConnected;
   bool get isScanning => _isScanning;
@@ -57,59 +58,83 @@ class UsbMidiService {
   // ─── Init ─────────────────────────────────────────────
 
   UsbMidiService() {
+    debugPrint('[USB] UsbMidiService initializing...');
+
     // Lắng nghe thay đổi MIDI setup (thiết bị cắm/rút)
     _setupChangedSub = _midi.onMidiSetupChanged?.listen((_) {
+      debugPrint('[USB] MIDI setup changed - refreshing devices');
       _refreshDevices();
     });
+
+    // Refresh devices ngay khi khởi tạo (USB devices đã được CoreMIDI detect)
+    _initDevices();
+  }
+
+  /// Load devices ngay khi khởi tạo (CoreMIDI USB devices)
+  Future<void> _initDevices() async {
+    await Future.delayed(const Duration(milliseconds: 500)); // Chờ CoreMIDI init
+    await _refreshDevices();
   }
 
   // ─── Device Scanning ─────────────────────────────────
 
-  /// Refresh danh sách thiết bị
+  /// Refresh danh sách thiết bị từ CoreMIDI + BLE
   Future<void> _refreshDevices() async {
     try {
       final devs = await _midi.devices;
       if (devs != null) {
         _devices = devs;
-        _devicesController.add(_devices);
-        debugPrint('[USB] Devices: ${devs.length}');
+        _devicesController.add(devs);
+        debugPrint('[USB] CoreMIDI devices found: ${devs.length}');
         for (final d in devs) {
-          debugPrint('  - ${d.name} (${d.id})');
+          debugPrint('  - ${d.name} [${d.id}] type=${d.type}');
         }
+      } else {
+        debugPrint('[USB] No devices returned');
       }
-    } catch (e) {
-      debugPrint('[USB] Refresh devices failed: $e');
+    } catch (e, st) {
+      debugPrint('[USB] Refresh devices failed: $e\n$st');
     }
   }
 
-  /// Bắt đầu scan thiết bị MIDI (BLE scanning)
+  /// Bắt đầu scan — refresh CoreMIDI devices + scan BLE
   Future<void> startScanning() async {
     if (_isScanning) return;
+
     _isScanning = true;
+    _scanController.add(true);
     _updateStatus(MidiConnectionStatus.connecting);
     debugPrint('[USB] Scanning for MIDI devices...');
 
     try {
-      // Refresh devices list from CoreMIDI (USB devices)
+      // 1. Refresh USB devices từ CoreMIDI (luôn cần gọi)
       await _refreshDevices();
 
-      // Also start BLE scanning if needed
+      // 2. Start BLE scanning
       await _midi.startScanningForBluetoothDevices();
 
+      // Refresh lại sau khi BLE scan xong
+      await Future.delayed(const Duration(seconds: 2));
+      await _refreshDevices();
+
       _isScanning = false;
+      _scanController.add(false);
       _updateStatus(MidiConnectionStatus.disconnected);
-    } catch (e) {
-      debugPrint('[USB] Scan failed: $e');
+      debugPrint('[USB] Scan complete. Total devices: ${_devices.length}');
+    } catch (e, st) {
+      debugPrint('[USB] Scan failed: $e\n$st');
       _isScanning = false;
+      _scanController.add(false);
       _updateStatus(MidiConnectionStatus.error);
     }
   }
 
-  /// Dừng scan
+  /// Dừng scan BLE
   Future<void> stopScanning() async {
     if (!_isScanning) return;
     _midi.stopScanningForBluetoothDevices();
     _isScanning = false;
+    _scanController.add(false);
     debugPrint('[USB] Scanning stopped');
   }
 
@@ -122,7 +147,7 @@ class UsbMidiService {
     try {
       await _midi.connectToDevice(device);
 
-      // Listen to MIDI messages from this device
+      // Listen to MIDI messages
       _midiDataSub?.cancel();
       _midiDataSub = _midi.onMidiDataReceived?.listen((MidiPacket packet) {
         _handleMidiPacket(packet);
@@ -133,8 +158,8 @@ class UsbMidiService {
       _updateStatus(MidiConnectionStatus.connected);
       debugPrint('[USB] Connected to ${device.name}');
       return true;
-    } catch (e) {
-      debugPrint('[USB] Connect failed: $e');
+    } catch (e, st) {
+      debugPrint('[USB] Connect failed: $e\n$st');
       _isConnected = false;
       _updateStatus(MidiConnectionStatus.error);
       return false;
@@ -161,7 +186,6 @@ class UsbMidiService {
     if (!_isConnected) return;
     final msg = midi.CCMessage(channel: channel, controller: cc, value: value);
     _sendWithThrottle(msg);
-    debugPrint('[USB] CC Ch:$channel CC:$cc Val:$value');
   }
 
   /// Gửi Note On
@@ -170,7 +194,6 @@ class UsbMidiService {
     final msg = midi.NoteOnMessage(
         channel: channel, note: note, velocity: velocity);
     _sendWithThrottle(msg);
-    debugPrint('[USB] NoteOn Ch:$channel Note:$note Vel:$velocity');
   }
 
   /// Gửi Note Off
@@ -178,10 +201,9 @@ class UsbMidiService {
     if (!_isConnected) return;
     final msg = midi.NoteOffMessage(channel: channel, note: note, velocity: 0);
     _sendWithThrottle(msg);
-    debugPrint('[USB] NoteOff Ch:$channel Note:$note');
   }
 
-  /// Gửi MIDI message từ MidiMessage object
+  /// Gửi MIDI message
   void sendMessage(MidiMessage message) {
     switch (message.type) {
       case MidiMessageType.controlChange:
@@ -217,47 +239,34 @@ class UsbMidiService {
     switch (type) {
       case 0xB0: // Control Change
         if (data.length >= 3) {
-          final cc = data[1];
-          final value = data[2];
-          final msg = MidiMessage(
+          _messageController.add(MidiMessage(
             type: MidiMessageType.controlChange,
             channel: channel,
-            control: cc,
-            value: value,
-          );
-          _messageController.add(msg);
-          debugPrint('[USB RX] CC Ch:$channel CC:$cc Val:$value');
+            control: data[1],
+            value: data[2],
+          ));
         }
         break;
-
-      case 0x90: // Note On
+      case 0x90: // Note On / Note Off (vel=0)
         if (data.length >= 3) {
-          final note = data[1];
-          final velocity = data[2];
-          final msg = MidiMessage(
-            type: velocity == 0
+          _messageController.add(MidiMessage(
+            type: data[2] == 0
                 ? MidiMessageType.noteOff
                 : MidiMessageType.noteOn,
             channel: channel,
-            control: note,
-            value: velocity,
-          );
-          _messageController.add(msg);
-          debugPrint('[USB RX] Note Ch:$channel Note:$note Vel:$velocity');
+            control: data[1],
+            value: data[2],
+          ));
         }
         break;
-
       case 0x80: // Note Off
         if (data.length >= 3) {
-          final note = data[1];
-          final msg = MidiMessage(
+          _messageController.add(MidiMessage(
             type: MidiMessageType.noteOff,
             channel: channel,
-            control: note,
+            control: data[1],
             value: 0,
-          );
-          _messageController.add(msg);
-          debugPrint('[USB RX] NoteOff Ch:$channel Note:$note');
+          ));
         }
         break;
     }
@@ -276,6 +285,7 @@ class UsbMidiService {
     _statusController.close();
     _messageController.close();
     _devicesController.close();
+    _scanController.close();
     _midi.dispose();
   }
 }

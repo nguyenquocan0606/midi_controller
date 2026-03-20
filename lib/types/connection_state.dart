@@ -11,11 +11,8 @@ enum ConnectionType {
   /// WiFi: WebSocket qua mạng LAN/WiFi
   wifi,
 
-  /// USB Tethering: WebSocket qua USB network interface
+  /// USB Tethering: WebSocket qua USB network interface (iPad cắm USB-C vào PC)
   usbTethering,
-
-  /// USB MIDI: Gửi MIDI trực tiếp qua USB-C
-  usbMidi,
 }
 
 /// Cấu hình kết nối đến PC server

@@ -5,7 +5,7 @@ import '../stores/connection_provider.dart';
 import '../types/connection_state.dart';
 
 /// Trang cài đặt kết nối đến PC server
-/// Hỗ trợ WiFi, USB Tethering, và USB MIDI
+/// Hỗ trợ WiFi, USB Tethering
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -66,19 +66,12 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildConnectionTypeSelector(connection),
             const SizedBox(height: AppTheme.spacingLg),
 
-            // ─── Server Configuration (WiFi / USB Tethering) ───
-            if (connection.config.connectionType != ConnectionType.usbMidi) ...[
-              _buildSectionTitle('SERVER'),
+            // ─── Server Configuration ─────────────────
+            if (connection.config.connectionType == ConnectionType.wifi ||
+                connection.config.connectionType == ConnectionType.usbTethering) ...[
+              _buildSectionTitle('SERVER ADDRESS'),
               const SizedBox(height: AppTheme.spacingSm),
               _buildInputCard(connection),
-              const SizedBox(height: AppTheme.spacingLg),
-            ],
-
-            // ─── USB MIDI Device Selector ──────────────
-            if (connection.config.connectionType == ConnectionType.usbMidi) ...[
-              _buildSectionTitle('USB MIDI DEVICE'),
-              const SizedBox(height: AppTheme.spacingSm),
-              _buildUsbDeviceSelector(connection),
               const SizedBox(height: AppTheme.spacingLg),
             ],
 
@@ -187,7 +180,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ConnectionType.wifi,
             Icons.wifi,
             'WiFi',
-            'Kết nối qua mạng LAN/WiFi',
+            'iPad và PC cùng mạng WiFi',
           ),
           _divider(),
           _buildConnectionTypeOption(
@@ -195,15 +188,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ConnectionType.usbTethering,
             Icons.usb,
             'USB Tethering',
-            'iPad cắm USB-C, dùng mạng USB để kết nối (nhanh & ổn định)',
-          ),
-          _divider(),
-          _buildConnectionTypeOption(
-            connection,
-            ConnectionType.usbMidi,
-            Icons.music_note,
-            'USB MIDI',
-            'Gửi MIDI trực tiếp qua USB-C (cần thiết bị hỗ trợ)',
+            'Cắm USB-C • Nhanh & ổn định • Vừa sạc iPad',
           ),
         ],
       ),
@@ -228,10 +213,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final isSelected = connection.config.connectionType == type;
 
     return InkWell(
-      onTap: () {
-        connection.setConnectionType(type);
-        _updateHostHint(type, connection);
-      },
+      onTap: () => connection.setConnectionType(type),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingMd),
         child: Row(
@@ -283,17 +265,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _updateHostHint(ConnectionType type, ConnectionProvider connection) {
-    // Update hint text based on connection type
-    if (type == ConnectionType.usbTethering) {
-      _hostController.text = '172.20.10.1';
-    } else if (type == ConnectionType.wifi) {
-      _hostController.text = connection.config.host;
-    }
-  }
-
   /// Card nhập IP và Port
   Widget _buildInputCard(ConnectionProvider connection) {
+    final isUsbTethering =
+        connection.config.connectionType == ConnectionType.usbTethering;
+
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
@@ -303,27 +279,51 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       child: Column(
         children: [
+          // USB Tethering hint
+          if (isUsbTethering) ...[
+            Container(
+              padding: const EdgeInsets.all(AppTheme.spacingSm),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.usb, color: AppTheme.primary, size: 18),
+                  const SizedBox(width: AppTheme.spacingSm),
+                  Expanded(
+                    child: Text(
+                      '1. Cắm iPad vào PC qua USB-C\n'
+                      '2. iPad: Settings → Personal Hotspot → USB Tethering ON\n'
+                      '3. Chạy server trên PC → xem USB IP ở console\n'
+                      '4. Nhập USB IP bên dưới',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.primary,
+                            height: 1.5,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingMd),
+          ],
+
           // Host input
           TextField(
             controller: _hostController,
             style: const TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Server IP Address',
-              hintText: connection.config.connectionType ==
-                      ConnectionType.usbTethering
-                  ? '172.20.10.1 (USB default)'
-                  : '192.168.1.100',
+              hintText: isUsbTethering ? '172.20.10.x (USB IP)' : '192.168.1.100',
               prefixIcon:
                   const Icon(Icons.computer, color: AppTheme.textDim),
-              helperText: connection.config.connectionType ==
-                      ConnectionType.usbTethering
-                  ? 'USB Tethering IP (xem trong console server)'
+              helperText: isUsbTethering
+                  ? 'USB IP: xem console server khi chạy node server.js'
                   : null,
               helperStyle: const TextStyle(color: AppTheme.primary),
             ),
-            onChanged: (value) {
-              connection.updateHost(value);
-            },
+            onChanged: (value) => connection.updateHost(value),
           ),
           const SizedBox(height: AppTheme.spacingMd),
           // Port input
@@ -348,48 +348,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// Card chọn USB MIDI device
-  Widget _buildUsbDeviceSelector(ConnectionProvider connection) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.spacingMd),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.surfaceBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.usb, color: AppTheme.textDim, size: 20),
-              const SizedBox(width: AppTheme.spacingSm),
-              Text(
-                'USB MIDI Devices',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () => connection.scanUsbDevices(),
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Scan'),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.spacingSm),
-          Text(
-            'Quét thiết bị MIDI được kết nối qua USB-C',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textDim,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Nút Connect / Disconnect
   Widget _buildConnectionButton(ConnectionProvider connection) {
     final isConnected = connection.isConnected;
@@ -402,17 +360,18 @@ class _SettingsPageState extends State<SettingsPage> {
     } else if (isConnected) {
       buttonLabel = 'DISCONNECT';
     } else {
-      switch (connection.config.connectionType) {
-        case ConnectionType.wifi:
-          buttonLabel = 'CONNECT VIA WIFI';
-          break;
-        case ConnectionType.usbTethering:
-          buttonLabel = 'CONNECT VIA USB';
-          break;
-        case ConnectionType.usbMidi:
-          buttonLabel = 'CONNECT USB MIDI';
-          break;
-      }
+      buttonLabel = connection.config.connectionType == ConnectionType.usbTethering
+          ? 'CONNECT VIA USB'
+          : 'CONNECT VIA WIFI';
+    }
+
+    IconData buttonIcon;
+    if (isConnected) {
+      buttonIcon = Icons.link_off;
+    } else if (connection.config.connectionType == ConnectionType.usbTethering) {
+      buttonIcon = Icons.usb;
+    } else {
+      buttonIcon = Icons.wifi;
     }
 
     return SizedBox(
@@ -428,14 +387,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   await connection.connect();
                 }
               },
-        icon: Icon(
-          isConnected
-              ? Icons.link_off
-              : (connection.config.connectionType == ConnectionType.usbMidi
-                  ? Icons.music_note
-                  : Icons.link),
-          color: isConnected ? AppTheme.error : AppTheme.background,
-        ),
+        icon: Icon(buttonIcon,
+            color: isConnected ? AppTheme.error : AppTheme.background),
         label: Text(
           buttonLabel,
           style: TextStyle(
@@ -456,6 +409,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// Card hướng dẫn setup server
   Widget _buildGuideCard(ConnectionProvider connection) {
+    final isUsb = connection.config.connectionType == ConnectionType.usbTethering;
+
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
@@ -467,7 +422,7 @@ class _SettingsPageState extends State<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'How to setup:',
+            'PC Server Setup:',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppTheme.primary,
                   fontWeight: FontWeight.w600,
@@ -475,52 +430,17 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: AppTheme.spacingSm),
 
-          // WiFi guide
-          if (connection.config.connectionType == ConnectionType.wifi) ...[
-            _buildGuideStep('1', 'Run the MIDI server on your PC'),
-            _buildGuideStep('2', 'Connect iPad and PC to the same WiFi'),
-            _buildGuideStep('3', 'Enter PC IP and click Connect'),
+          if (!isUsb) ...[
+            _buildGuideStep('1', 'Chạy server: cd script/midi-server && node server.js'),
+            _buildGuideStep('2', 'Copy IP của PC từ console server'),
+            _buildGuideStep('3', 'Nhập IP vào app → CONNECT'),
           ],
 
-          // USB Tethering guide
-          if (connection.config.connectionType == ConnectionType.usbTethering) ...[
-            _buildGuideStep('1', 'Connect iPad to PC via USB-C cable'),
-            _buildGuideStep('2', 'iPad: Settings → Personal Hotspot → USB Tethering ON'),
-            _buildGuideStep('3', 'Run MIDI server on PC'),
-            _buildGuideStep('4', 'Server sẽ tự detect USB IP (xem console)'),
-            _buildGuideStep('5', 'Nhập USB IP vào app → Connect'),
-            _buildGuideStep('6', '✓ Nhanh hơn WiFi, vừa sạc vừa điều khiển!'),
-          ],
-
-          // USB MIDI guide
-          if (connection.config.connectionType == ConnectionType.usbMidi) ...[
-            _buildGuideStep('1', 'Connect USB MIDI device to iPad via USB-C'),
-            _buildGuideStep('2', 'Click Scan để tìm thiết bị'),
-            _buildGuideStep('3', 'Select thiết bị và Connect'),
-            const SizedBox(height: AppTheme.spacingSm),
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spacingSm),
-              decoration: BoxDecoration(
-                color: AppTheme.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline,
-                      color: AppTheme.warning, size: 18),
-                  const SizedBox(width: AppTheme.spacingSm),
-                  Expanded(
-                    child: Text(
-                      'USB MIDI gửi trực tiếp, không qua server. '
-                      'Chỉ dùng khi cần độ trễ thấp nhất.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.warning,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          if (isUsb) ...[
+            _buildGuideStep('1', 'Chạy server: node server.js'),
+            _buildGuideStep('2', 'Server tự detect USB IP → copy IP đó'),
+            _buildGuideStep('3', 'Nhập USB IP vào app → CONNECT'),
+            _buildGuideStep('4', '✓ USB Tethering: nhanh, sạc iPad, không cần WiFi!'),
           ],
 
           const SizedBox(height: AppTheme.spacingSm),
@@ -537,7 +457,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: AppTheme.spacingSm),
                 Expanded(
                   child: Text(
-                    'Khuyến nghị: USB Tethering — nhanh, ổn định, vừa sạc iPad!',
+                    isUsb
+                        ? 'USB Tethering khuyến nghị: độ trễ thấp, ổn định!'
+                        : 'PC và iPad phải cùng mạng WiFi',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppTheme.primary,
                         ),
