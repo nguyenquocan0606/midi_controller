@@ -6,7 +6,11 @@
       "Bash(flutter pub:*)",
       "Bash(flutter ios:*)",
       "Bash(flutter analyze:*)",
-      "Bash(find 'D:/cac du an dang lam/flutter/midi/midi_controller/.pub-cache' -name flutter_midi_command* -type d)"
+      "Bash(find 'D:/cac du an dang lam/flutter/midi/midi_controller/.pub-cache' -name flutter_midi_command* -type d)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(flutter:*)",
+      "Bash(where flutter:*)"
     ]
   }
 }
