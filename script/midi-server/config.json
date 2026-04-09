@@ -89,7 +89,7 @@
     {
       "id": 2,
       "name": "002",
-      "imageUrl": null,
+      "imageUrl": "http://169.254.83.107:8080/pads/pad_2_1775699076602.png",
       "color": "#00d4ff",
       "type": "trigger",
       "layerId": 1

@@ -4036,3 +4036,8 @@
 [01:35:27.723] OUT NOTE_OFF Ch:9 Note:41 Vel:undefined
 [01:35:27.992] OUT NOTE_ON Ch:9 Note:37 Vel:127
 [01:35:28.323] OUT NOTE_OFF Ch:9 Note:37 Vel:undefined
+[01:55:16.251] OUT NOTE_ON Ch:9 Note:45 Vel:127
+[01:55:16.602] OUT NOTE_ON Ch:9 Note:45 Vel:127
+[01:55:17.259] OUT NOTE_OFF Ch:9 Note:45 Vel:undefined
+[01:55:17.542] OUT NOTE_ON Ch:9 Note:45 Vel:127
+[01:55:17.892] OUT NOTE_OFF Ch:9 Note:45 Vel:undefined

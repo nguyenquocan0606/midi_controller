@@ -23,6 +23,10 @@ class _MixerPageState extends State<MixerPage> {
   final Map<int, double> _faderValues = {};
   /// active pad trong mỗi Layer (Layer -> padId)
   final Map<int, int?> _activePadPerLayer = {};
+  
+  /// Trạng thái ẩn/hiện Fader Group
+  bool _showFaders = true;
+
   StreamSubscription? _feedbackSub;
   StreamSubscription? _configSub;
 
@@ -70,21 +74,25 @@ class _MixerPageState extends State<MixerPage> {
         child: Column(
           children: [
             _buildTopBar(connection),
-            Expanded(
-              flex: 4,
-              child: Container(
-                margin: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacingMd, vertical: AppTheme.spacingSm),
-                padding: const EdgeInsets.all(AppTheme.spacingMd),
-                decoration: _sectionDecoration(),
-                child: _buildFadersSection(connection),
+            if (_showFaders)
+              Expanded(
+                flex: 4,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingMd, vertical: AppTheme.spacingSm),
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
+                  decoration: _sectionDecoration(),
+                  child: _buildFadersSection(connection),
+                ),
               ),
-            ),
             Expanded(
-              flex: 5,
+              flex: _showFaders ? 5 : 1,
               child: Container(
-                margin: const EdgeInsets.fromLTRB(
-                    AppTheme.spacingMd, 0, AppTheme.spacingMd, AppTheme.spacingMd),
+                margin: EdgeInsets.fromLTRB(
+                    AppTheme.spacingMd, 
+                    _showFaders ? 0 : AppTheme.spacingMd, 
+                    AppTheme.spacingMd, 
+                    AppTheme.spacingMd),
                 padding: const EdgeInsets.all(AppTheme.spacingMd),
                 decoration: _sectionDecoration(),
                 child: _buildPadsSection(connection),
@@ -159,6 +167,23 @@ class _MixerPageState extends State<MixerPage> {
           ),
           const Spacer(),
           _buildStatusBadge(statusColor, statusText),
+          const SizedBox(width: AppTheme.spacingMd),
+          // Nút ẩn/hiện Faders
+          Container(
+            decoration: BoxDecoration(
+              color: _showFaders ? AppTheme.primary.withValues(alpha: 0.1) : AppTheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _showFaders ? AppTheme.primary.withValues(alpha: 0.5) : AppTheme.surfaceBorder),
+            ),
+            child: IconButton(
+              onPressed: () => setState(() => _showFaders = !_showFaders),
+              icon: Icon(Icons.equalizer, color: _showFaders ? AppTheme.primary : AppTheme.textPrimary),
+              iconSize: 22,
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(),
+              tooltip: 'Bật/Tắt Faders',
+            ),
+          ),
           const SizedBox(width: AppTheme.spacingMd),
           Container(
             decoration: BoxDecoration(

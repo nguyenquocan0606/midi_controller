@@ -90,6 +90,16 @@ function loadConfig() {
       const raw = fs.readFileSync(CONFIG_FILE, "utf-8");
       const loaded = JSON.parse(raw);
       console.log("[CFG] Loaded config from file");
+      
+      const currentUrl = getServerUrl();
+      if (loaded.pads) {
+        loaded.pads.forEach(p => {
+          if (p.imageUrl && p.imageUrl.includes('/pads/')) {
+            const fileName = p.imageUrl.split('/pads/').pop();
+            p.imageUrl = `${currentUrl}/pads/${fileName}`;
+          }
+        });
+      }
       return { ...DEFAULT_CONFIG, ...loaded };
     }
   } catch (e) {
@@ -671,11 +681,20 @@ function getLocalIPs() {
   const ips = [];
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name]) {
-      if (iface.family === "IPv4" && !iface.internal) {
+      if (iface.family === "IPv4" && !iface.internal && !iface.address.startsWith("169.254.")) {
         ips.push({ name, address: iface.address });
       }
     }
   }
+  ips.sort((a, b) => {
+    const aName = a.name.toLowerCase();
+    const bName = b.name.toLowerCase();
+    const aGood = aName.includes("wifi") || aName.includes("wi-fi") || aName.includes("ethernet") || aName.includes("lan");
+    const bGood = bName.includes("wifi") || bName.includes("wi-fi") || bName.includes("ethernet") || bName.includes("lan");
+    if (aGood && !bGood) return -1;
+    if (!aGood && bGood) return 1;
+    return 0;
+  });
   return ips;
 }
 
