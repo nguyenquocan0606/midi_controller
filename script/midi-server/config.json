@@ -2,21 +2,21 @@
   "groups": [
     {
       "id": 0,
-      "name": "Group 1",
+      "name": "BACKGROUND CHÍNH",
       "channels": [
         {
           "id": 0,
-          "name": "CH 1",
+          "name": "MASTER",
           "color": null
         },
         {
           "id": 1,
-          "name": "CH 2",
+          "name": "NHẠC",
           "color": null
         },
         {
           "id": 2,
-          "name": "CH 3",
+          "name": "HÌNH",
           "color": null
         }
       ],
@@ -24,21 +24,21 @@
     },
     {
       "id": 1,
-      "name": "Group 2",
+      "name": "VISUAL + NHẠC",
       "channels": [
         {
           "id": 0,
-          "name": "CH 4",
+          "name": "MASTER",
           "color": null
         },
         {
           "id": 1,
-          "name": "CH 5",
+          "name": "NHẠC",
           "color": null
         },
         {
           "id": 2,
-          "name": "CH 6",
+          "name": "HÌNH",
           "color": null
         }
       ],
@@ -46,90 +46,73 @@
     },
     {
       "id": 2,
-      "name": "Group 3",
+      "name": "NHẠC",
       "channels": [
         {
           "id": 0,
-          "name": "CH 7",
+          "name": "MASTER",
           "color": null
         },
         {
           "id": 1,
-          "name": "CH 8",
+          "name": "NHẠC",
           "color": null
         },
         {
           "id": 2,
-          "name": "CH 9",
-          "color": null
-        }
-      ],
-      "isActive": false
-    },
-    {
-      "id": 1774022149927,
-      "name": "gr4",
-      "channels": [
-        {
-          "id": 0,
-          "name": "CH 10",
-          "color": null
-        },
-        {
-          "id": 1,
-          "name": "CH 11",
-          "color": null
-        },
-        {
-          "id": 2,
-          "name": "CH 12",
+          "name": "HÌNH",
           "color": null
         }
       ],
       "isActive": true
     }
   ],
-  "activeGroupId": 1774022149927,
-  "padLayout": "grid5x3",
+  "activeGroupId": 2,
+  "padLayout": "grid5x4",
   "pads": [
     {
       "id": 0,
-      "name": "PAD 1",
-      "imageUrl": "http://169.254.83.107:8080/pads/pad_0_1774023353655.png",
+      "name": "BACKGROUND CHÍNH",
+      "imageUrl": "http://169.254.83.107:8080/pads/pad_0_1775698370482.png",
       "color": "#00d4ff",
-      "type": "trigger"
+      "type": "trigger",
+      "layerId": 4
     },
     {
       "id": 1,
-      "name": "PAD 2",
-      "imageUrl": "http://169.254.83.107:8080/pads/pad_1_1774023361815.png",
+      "name": "001",
+      "imageUrl": "http://169.254.83.107:8080/pads/pad_1_1775698596303.png",
       "color": "#00d4ff",
-      "type": "trigger"
+      "type": "trigger",
+      "layerId": 1
     },
     {
       "id": 2,
-      "name": "PAD 3",
-      "imageUrl": "http://169.254.83.107:8080/pads/pad_2_1774023373432.png",
+      "name": "002",
+      "imageUrl": null,
       "color": "#00d4ff",
-      "type": "trigger"
+      "type": "trigger",
+      "layerId": 1
     },
     {
       "id": 3,
-      "name": "PAD 4",
-      "imageUrl": "http://169.254.83.107:8080/pads/pad_3_1774023416869.png",
+      "name": "003",
+      "imageUrl": null,
       "color": "#00d4ff",
-      "type": "trigger"
+      "type": "trigger",
+      "layerId": 1
     },
     {
       "id": 4,
-      "name": "PAD 5",
+      "name": "004",
       "imageUrl": null,
-      "color": null,
-      "type": "trigger"
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 1
     },
     {
       "id": 5,
-      "name": "PAD 6",
+      "name": "005",
       "imageUrl": null,
       "color": "#00d4ff",
       "type": "trigger",
@@ -137,7 +120,7 @@
     },
     {
       "id": 6,
-      "name": "PAD 7",
+      "name": "006",
       "imageUrl": null,
       "color": "#00d4ff",
       "type": "trigger",
@@ -145,62 +128,107 @@
     },
     {
       "id": 7,
-      "name": "PAD 8",
+      "name": "LÊN SÂN KHẤU",
       "imageUrl": null,
       "color": "#00d4ff",
       "type": "trigger",
-      "layerId": 1
+      "layerId": 2
     },
     {
       "id": 8,
-      "name": "PAD 9",
+      "name": "BẾ MẠC",
       "imageUrl": null,
       "color": "#00d4ff",
       "type": "trigger",
-      "layerId": 1
+      "layerId": 2
     },
     {
       "id": 9,
-      "name": "PAD 10",
+      "name": "TRAO BẰNG VINH DANH",
       "imageUrl": null,
       "color": "#00d4ff",
       "type": "trigger",
-      "layerId": 1
+      "layerId": 2
     },
     {
       "id": 10,
-      "name": "PAD 11",
+      "name": "TẶNG HOA",
       "imageUrl": null,
-      "color": null,
-      "type": "trigger"
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
     },
     {
       "id": 11,
-      "name": "PAD 12",
+      "name": "GIỚI THIỆU ĐẠI BIỂU",
       "imageUrl": null,
-      "color": null,
-      "type": "trigger"
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
     },
     {
       "id": 12,
-      "name": "PAD 13",
+      "name": "TIẾN LÊN HỘI TRƯỜNG",
       "imageUrl": null,
-      "color": null,
-      "type": "trigger"
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
     },
     {
       "id": 13,
-      "name": "PAD 14",
+      "name": "TON VINH TRAO THUONG",
       "imageUrl": null,
-      "color": null,
-      "type": "trigger"
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
     },
     {
       "id": 14,
-      "name": "PAD 15",
+      "name": "MADE IN VIETNAM",
       "imageUrl": null,
-      "color": null,
-      "type": "trigger"
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
+    },
+    {
+      "id": 15,
+      "name": "NHA TOI CO 1 LA CO",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
+    },
+    {
+      "id": 16,
+      "name": "TU HAO VIET NAM",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
+    },
+    {
+      "id": 17,
+      "name": "VIET TIEP CAU CHUYEN HOA BINH",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
+    },
+    {
+      "id": 18,
+      "name": "CHAO CO",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 2
+    },
+    {
+      "id": 19,
+      "name": "CANCEL",
+      "imageUrl": null,
+      "color": "#00d4ff",
+      "type": "trigger",
+      "layerId": 3
     }
   ],
   "layers": [
