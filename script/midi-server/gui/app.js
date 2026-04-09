@@ -287,7 +287,7 @@ document.querySelectorAll('input[name="padLayout"]').forEach((r) => {
     hasUnsavedChanges = true;
     updateSaveBadge();
     const newLayout = e.target.value;
-    const layouts = { grid5x3: 15, grid5x4: 20, grid5x5: 25 };
+    const layouts = { grid5x3: 15, grid5x4: 20, grid5x5: 25, grid7x5: 35, grid8x5: 40 };
     const newCount = layouts[newLayout];
     const oldCount = layouts[config.padLayout];
     config.padLayout = newLayout;

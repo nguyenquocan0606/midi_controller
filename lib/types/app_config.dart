@@ -154,7 +154,9 @@ class GroupConfig {
 enum PadLayout {
   grid5x3(5, 3, '5×3 (15 pads)'),
   grid5x4(5, 4, '5×4 (20 pads)'),
-  grid5x5(5, 5, '5×5 (25 pads)');
+  grid5x5(5, 5, '5×5 (25 pads)'),
+  grid7x5(7, 5, '7×5 (35 pads)'),
+  grid8x5(8, 5, '8×5 (40 pads)');
 
   final int columns;
   final int rows;

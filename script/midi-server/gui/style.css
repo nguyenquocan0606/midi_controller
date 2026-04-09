@@ -214,6 +214,8 @@ header h1 {
 .pad-grid.grid5x3 { grid-template-columns: repeat(5, 1fr); }
 .pad-grid.grid5x4 { grid-template-columns: repeat(5, 1fr); }
 .pad-grid.grid5x5 { grid-template-columns: repeat(5, 1fr); }
+.pad-grid.grid7x5 { grid-template-columns: repeat(7, 1fr); }
+.pad-grid.grid8x5 { grid-template-columns: repeat(8, 1fr); }
 
 .pad-item {
   aspect-ratio: 1;
